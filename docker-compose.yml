@@ -1,0 +1,45 @@
+---
+
+x-logging:
+  &default-logging
+  driver: "json-file"
+  options:
+    max-size: "1m"
+    max-file: "1"
+    tag: "{{.Name}}"
+
+x-common-labels: &default-labels
+  logging: "promtail"
+  logging_jobname: "containerlogs"
+  stackname: ${MONITORING_STACK}
+  
+services:
+  nginx:
+    image: nginx:latest
+    container_name: hello_world
+    #ports:
+    #  - 8080:80
+    expose:
+      - 80
+    environment:
+      - NGINX_HOST=${NGINX_HOST:-localhost}
+      - NGINX_PORT=${NGINX_PORT:-80}
+    restart: unless-stopped
+    networks:
+      - traefik
+    labels:
+      <<: *default-labels
+      # Enable Traefik for this service
+      traefik.enable: true
+      # Configure router
+      traefik.http.routers.hello-world.rule: Host(`${NGINX_HOST}`)
+      traefik.http.routers.hello-world.tls: true
+      traefik.http.routers.hello-world.tls.certresolver: letsencrypt
+      # Configure service
+      traefik.http.services.hello-world.loadbalancer.server.port: ${NGINX_PORT}
+    logging: *default-logging
+
+networks:
+  traefik:
+    name: ${NETWORK}
+    external: true
