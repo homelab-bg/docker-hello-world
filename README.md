@@ -1,6 +1,6 @@
 # Traefik Hello World
 
-A simple Nginx service configured for Traefik reverse proxy integration.
+A simple Nginx service with support for both standalone and Traefik reverse proxy deployments.
 
 ## Quick Start
 
@@ -9,20 +9,37 @@ A simple Nginx service configured for Traefik reverse proxy integration.
 cp .env.example .env
 ```
 
-2. Edit `.env` and set your domain:
+2. Edit `.env` and configure your domain:
 ```bash
 NGINX_HOST=hello.example.com
+NGINX_PORT=80
 ```
 
-3. Deploy with Docker Compose:
+## Deployment Options
+
+### Standalone Deployment
+Direct access via host ports:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
+Access at: http://localhost:80 (or configured NGINX_PORT)
+
+### Traefik Integration
+Deploy with reverse proxy integration:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d
+```
+Access at: https://your-domain (with automatic TLS)
 
 ## Prerequisites
 
+### Standalone
 - Docker & Docker Compose
-- External `traefik` network (for Traefik integration)
+
+### Traefik Integration  
+- Docker & Docker Compose
+- External `traefik` network
+- Traefik instance with Let's Encrypt configured
 
 ## Configuration
 
