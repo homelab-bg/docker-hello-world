@@ -1,0 +1,49 @@
+---
+# Swarm-mode overlay - an alternative to docker-compose.traefik.yml, not a
+# layer on top of it. Use this when deploying to a Docker Swarm cluster (e.g.
+# via Portainer's "Additional paths", or):
+#
+#   docker stack deploy -c docker-compose.yml -c docker-compose.swarm.yml <stack>
+#
+# docker-compose.traefik.yml targets plain `docker compose up` (single host,
+# Traefik's Docker provider, which reads container labels). This file targets
+# `docker stack deploy` (Swarm mode, Traefik's Swarm Provider), which only
+# reads labels from the service spec (deploy.labels) - see
+# docker-traefik-portainer/docker-compose.swarm.yml for the same fix, and its
+# accompanying note on why. `docker stack deploy` also rejects bare YAML
+# booleans in labels, so values below are quoted strings even where they read
+# as booleans - see docker-traefik-portainer/docker-compose.yml history.
+x-logging:
+  &default-logging
+  driver: "json-file"
+  options:
+    max-size: "1m"
+    max-file: "1"
+    tag: "{{.Name}}"
+
+x-common-labels: &default-labels
+  logging: "promtail"
+  logging_jobname: "containerlogs"
+  stackname: ${MONITORING_STACK}
+
+services:
+  nginx:
+    ports: !reset []
+    expose:
+      - 80
+    networks:
+      - traefik
+    deploy:
+      labels:
+        <<: *default-labels
+        traefik.enable: "true"
+        traefik.http.routers.hello-world.rule: Host(`${NGINX_HOST}`)
+        traefik.http.routers.hello-world.tls: "true"
+        traefik.http.routers.hello-world.tls.certresolver: letsencrypt
+        traefik.http.services.hello-world.loadbalancer.server.port: "${NGINX_PORT}"
+    logging: *default-logging
+
+networks:
+  traefik:
+    name: ${NETWORK}
+    external: true
